@@ -1,0 +1,5 @@
+Did not find path entry D:\CS\workspace\miniconda\bin
+2026-06-03 21:07:02.976 Uvicorn server started on 0.0.0.0:8501
+2026-06-03 21:07:05.465 Did not auto detect external IP.
+Please go to https://docs.streamlit.io/ for debugging hints.
+^C

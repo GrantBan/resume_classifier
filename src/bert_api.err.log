@@ -1,0 +1,8 @@
+Did not find path entry D:\CS\workspace\miniconda\bin
+Did not find path entry D:\CS\workspace\miniconda\bin
+INFO:     Started server process [13284]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+Token indices sequence length is longer than the specified maximum sequence length for this model (602 > 512). Running this sequence through the model will result in indexing errors
+^C
