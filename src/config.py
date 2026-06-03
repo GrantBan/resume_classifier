@@ -23,19 +23,26 @@ class Config:
         self.train_data_path = str(self.data_dir / "train_data.txt")
         self.test_data_path = str(self.data_dir / "test_data.txt")
         self.processed_data_path = str(self.data_dir)
+        self.result_dir = self.project_dir / "result"
 
         # 模型保存路径。
-        self.model_save_path = str(self.model_dir / "final_hierarchical_bert.pt")
+        self.model_save_path = str(self.model_dir / "best_hierarchical_bert.pt")
 
         # 训练超参数。
         self.batch_size = 2
         self.gradient_accumulation_steps = 4
-        self.num_epochs = 3
+        self.num_epochs = 5
         self.learning_rate = 2e-5
         self.weight_decay = 0.01
         self.max_grad_norm = 1.0
         self.log_interval = 10
         self.debug_mode = False
+        self.dropout = 0.3
+        self.warmup_ratio = 0.1
+        self.use_dev_split = True
+        self.dev_size = 0.1
+        self.split_seed = 42
+        self.early_stopping_patience = 2
 
         # Hierarchical BERT 相关参数。
         self.bert_model_name = "bert-base-uncased"
@@ -43,6 +50,7 @@ class Config:
         self.pad_size = 512
         self.max_chunks = 4
         self.max_tokens_per_chunk = 510
+        self.pooling_type = "attention"
 
         # 过长样本过滤参数。
         # 当前训练集和测试集约 98% 的样本长度不超过 2040 个正文 token，

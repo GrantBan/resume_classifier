@@ -2,6 +2,9 @@
 构建 Hierarchical BERT 训练和测试所需的 Dataset 与 DataLoader。
 """
 
+import random
+from collections import defaultdict
+
 import torch
 from torch.utils.data import DataLoader, Dataset
 
@@ -91,6 +94,35 @@ class TextDataset(Dataset):
         return text, label
 
 
+def stratified_dev_split(data, dev_size, seed):
+    """从训练集中按类别分层切出 dev 集。"""
+    rng = random.Random(seed)
+    label_to_items = defaultdict(list)
+
+    for item in data:
+        label_to_items[item[1]].append(item)
+
+    train_data = []
+    dev_data = []
+
+    for _, items in label_to_items.items():
+        items = list(items)
+        rng.shuffle(items)
+
+        if len(items) <= 1:
+            train_data.extend(items)
+            continue
+
+        dev_count = max(1, round(len(items) * dev_size))
+        dev_count = min(dev_count, len(items) - 1)
+        dev_data.extend(items[:dev_count])
+        train_data.extend(items[dev_count:])
+
+    rng.shuffle(train_data)
+    rng.shuffle(dev_data)
+    return train_data, dev_data
+
+
 def collate_fn(batch):
     """
     将一个 batch 的长简历转换成 Hierarchical BERT 输入。
@@ -153,26 +185,45 @@ def collate_fn(batch):
     return input_ids, attention_mask, chunk_mask, labels
 
 
-def build_dataloader():
-    """构建训练集和测试集的 DataLoader。"""
+def make_dataloader(dataset, shuffle):
+    """根据 Dataset 构建 DataLoader。"""
+    return DataLoader(
+        dataset,
+        batch_size=config.batch_size,
+        shuffle=shuffle,
+        collate_fn=collate_fn,
+    )
+
+
+def build_dataloader(return_dev=False):
+    """构建训练集、可选 dev 集和测试集的 DataLoader。"""
     train_data = load_raw_data(config.train_data_path)
     test_data = load_raw_data(config.test_data_path)
+
+    dev_data = []
+    if return_dev and config.use_dev_split:
+        train_data, dev_data = stratified_dev_split(
+            train_data,
+            config.dev_size,
+            config.split_seed,
+        )
+        print(
+            f"已从训练集中分层切分 dev 集：训练样本 {len(train_data)} 条，"
+            f"dev 样本 {len(dev_data)} 条。",
+            flush=True,
+        )
 
     train_dataset = TextDataset(train_data)
     test_dataset = TextDataset(test_data)
 
-    train_dataloader = DataLoader(
-        train_dataset,
-        batch_size=config.batch_size,
-        shuffle=True,
-        collate_fn=collate_fn,
-    )
-    test_dataloader = DataLoader(
-        test_dataset,
-        batch_size=config.batch_size,
-        shuffle=False,
-        collate_fn=collate_fn,
-    )
+    train_dataloader = make_dataloader(train_dataset, shuffle=True)
+    test_dataloader = make_dataloader(test_dataset, shuffle=False)
+
+    if return_dev and config.use_dev_split:
+        dev_dataset = TextDataset(dev_data)
+        dev_dataloader = make_dataloader(dev_dataset, shuffle=False)
+        return train_dataloader, dev_dataloader, test_dataloader
+
     return train_dataloader, test_dataloader
 
 

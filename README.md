@@ -282,7 +282,7 @@ resume-classification/
 ├── model/
 │   ├── baseline_tfidf_xgboost.pkl
 │   ├── baseline_fasttext.bin
-│   ├── final_hierarchical_bert.pt
+│   ├── best_hierarchical_bert.pt
 │   ├── tfidf_vectorizer.pkl
 │   └── label_encoder.pkl
 │
