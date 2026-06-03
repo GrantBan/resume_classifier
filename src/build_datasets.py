@@ -316,6 +316,10 @@ def write_csv(df: pd.DataFrame, path: Path) -> None:
     df.to_csv(path, index=False, encoding="utf-8")
 
 
+def write_tsv(df: pd.DataFrame, path: Path) -> None:
+    df.to_csv(path, sep="\t", index=False, encoding="utf-8")
+
+
 def fasttext_escape(text: str) -> str:
     return text.replace("\n", " ").replace("\r", " ").strip()
 
@@ -374,18 +378,23 @@ def save_json(data: object, path: Path) -> None:
 
 
 def read_input(path: Path, text_col: str, label_col: str) -> pd.DataFrame:
-    df = pd.read_csv(
-        path,
-        sep="\t",
-        quoting=csv.QUOTE_NONE,
-        encoding="utf-8",
-        engine="python",
-    )
+    read_kwargs = {
+        "sep": "\t",
+        "quoting": csv.QUOTE_NONE,
+        "encoding": "utf-8",
+        "engine": "python",
+    }
+    df = pd.read_csv(path, **read_kwargs)
 
     if text_col not in df.columns or label_col not in df.columns:
-        raise ValueError(
-            f"Input file must contain columns {text_col!r} and {label_col!r}. "
-            f"Found columns: {list(df.columns)}"
+        # Some generated train.txt files do not contain a header row. In that
+        # case pandas treats the first resume as the header, so read again with
+        # fixed column names.
+        df = pd.read_csv(
+            path,
+            header=None,
+            names=[text_col, label_col],
+            **read_kwargs,
         )
 
     df = df[[text_col, label_col]].rename(
@@ -417,6 +426,8 @@ def main() -> None:
 
     write_csv(train_df, output_dir / "xgboost_train.csv")
     write_csv(test_df, output_dir / "xgboost_test.csv")
+    write_tsv(train_df, output_dir / "train_split.txt")
+    write_tsv(test_df, output_dir / "test_split.txt")
 
     write_fasttext(train_df, output_dir / "fasttext_train.txt")
     write_fasttext(test_df, output_dir / "fasttext_test.txt")
@@ -467,6 +478,8 @@ def main() -> None:
             "test_max_chunks": test_hbert_stats["max_chunks"],
         },
         "outputs": {
+            "train_split": "train_split.txt",
+            "test_split": "test_split.txt",
             "xgboost_train": "xgboost_train.csv",
             "xgboost_test": "xgboost_test.csv",
             "fasttext_train": "fasttext_train.txt",

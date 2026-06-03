@@ -103,6 +103,8 @@
     "test_max_chunks": 8.0
   },
   "outputs": {
+    "train_split": "train_split.txt",
+    "test_split": "test_split.txt",
     "xgboost_train": "xgboost_train.csv",
     "xgboost_test": "xgboost_test.csv",
     "fasttext_train": "fasttext_train.txt",
