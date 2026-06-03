@@ -1,7 +1,3 @@
-# resume_classifier
-This project is designed for multi-person collaboration, where participants practice using a large model to perform multi-classification on resumes.
-test
-=======
 # Resume Classification
 
 基于英文简历文本的岗位类别自动分类项目。
@@ -333,4 +329,3 @@ Next steps:
 4. Compare baseline metrics
 5. Prepare Hierarchical BERT dataset loader
 ```
->>>>>>> feature/data-process
