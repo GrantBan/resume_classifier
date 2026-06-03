@@ -7,10 +7,10 @@
 ```text
 XGBoost + TF-IDF baseline
 -> FastText supervised baseline
--> Hierarchical BERT long-document classifier
+-> Base BERT + hierarchical chunk-pooling classifier
 ```
 
-项目目标是先使用 XGBoost 和 FastText 构建可复现的基线模型，再使用 Hierarchical BERT 处理长简历文本，提升模型对完整简历语义的理解能力。
+项目目标是先使用 XGBoost 和 FastText 构建可复现的基线模型，再使用 `bert-base-uncased` 作为底层编码器，结合自定义的层级分块聚合结构处理长简历文本。本文档中的 Hierarchical BERT 指“Base BERT 编码器 + chunk 级编码 + 文档级聚合”的模型结构，不是直接使用现成的 Hierarchical BERT 预训练模型。
 
 ## Project Background
 
@@ -96,7 +96,7 @@ Removed low-sample categories:
 当前本地数据统计如下：
 
 ```text
-Samples: 2263
+Samples: 2264
 Fields: 4
 Classes: 20
 ```
@@ -107,8 +107,10 @@ Classes: 20
 | --- | ---: |
 | Mean length | about 6295 characters |
 | Median length | about 5886 characters |
-| Minimum length | 21 characters |
+| Minimum length in original statistics | 21 characters |
 | Maximum length | 38842 characters |
+
+原始统计中 21 字符样本被视为噪声风险样本。当前训练/测试文件中已加入过短样本过滤规则，过滤少于 200 字符或少于 50 token 的样本。
 
 类别存在一定不均衡，例如：
 
@@ -198,11 +200,11 @@ Resume_str
 -> Category prediction
 ```
 
-### 3. Hierarchical BERT
+### 3. Base BERT + Hierarchical Pooling
 
 由于简历文本较长，普通 BERT 直接截断会丢失大量信息。
 
-本项目后续深度学习主线采用 Hierarchical BERT。
+本项目深度学习主线不是直接加载现成的 Hierarchical BERT 模型，而是使用 `bert-base-uncased` 作为 base BERT 编码器，并在其外部自定义长文本分块、chunk 聚合和分类层。
 
 Pipeline:
 
@@ -210,7 +212,7 @@ Pipeline:
 Resume_str
 -> text cleaning
 -> split into chunks
--> encode each chunk with BERT
+-> encode each chunk with bert-base-uncased
 -> aggregate chunk embeddings
 -> classifier
 -> Category prediction
@@ -229,12 +231,15 @@ Recommended initial settings:
 
 | Parameter | Value |
 | --- | --- |
-| Encoder | `bert-base-uncased` |
+| Base encoder | `bert-base-uncased` |
 | Chunk size | 512 tokens |
-| Max chunks per resume | 4 to 8 |
+| Max chunks per resume | 4 |
+| Max content tokens per resume | 2040 |
 | Initial aggregation | mean pooling |
 | Advanced aggregation | attention pooling |
 | Number of classes | 20 |
+
+In this project, "Hierarchical BERT" means the custom hierarchical long-document classifier built on top of base BERT, not a separate pretrained Hierarchical BERT checkpoint.
 
 ## Evaluation
 
@@ -277,7 +282,7 @@ resume-classification/
 ├── model/
 │   ├── baseline_tfidf_xgboost.pkl
 │   ├── baseline_fasttext.bin
-│   ├── hierarchical_bert/
+│   ├── final_hierarchical_bert.pt
 │   ├── tfidf_vectorizer.pkl
 │   └── label_encoder.pkl
 │
@@ -301,7 +306,7 @@ Large data files and model files should not be committed to Git.
 | 3 | FastText baseline | FastText supervised model |
 | 4 | Model evaluation | Metrics and confusion matrix |
 | 5 | Data augmentation | Balanced training data |
-| 6 | Hierarchical BERT | Long-document classification model |
+| 6 | Base BERT + hierarchical pooling | Long-document classification model |
 | 7 | Deployment | Web demo or API service |
 
 ## Notes
@@ -310,7 +315,7 @@ Large data files and model files should not be committed to Git.
 - This project is for learning and research practice.
 - The original dataset may contain template bias because it comes from resume examples.
 - Some categories have limited samples, so Macro F1 should be emphasized.
-- Resume texts are long, so Hierarchical BERT is preferred over simple truncation.
+- Resume texts are long, so base BERT is used with hierarchical chunk pooling instead of simple truncation.
 
 ## Current Status
 
@@ -327,5 +332,5 @@ Next steps:
 2. Train XGBoost baseline
 3. Train FastText baseline
 4. Compare baseline metrics
-5. Prepare Hierarchical BERT dataset loader
+5. Train Base BERT + hierarchical pooling classifier
 ```
